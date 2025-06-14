@@ -1,57 +1,134 @@
-# TeraPCA
-TeraPCA is a multithreaded C++ software suite based on Intel's MKL library (or any other BLAS and/or LAPACK distribution). TeraPCA features no dependencies to external libraries and combines the robustness of subspace iteration with the power of randomization.
+# TeraPCA 🧬⚡
 
-To install TeraPCA, one needs a working installation of Intel Math Kernel Library (MKL) (see https://software.intel.com/en-us/mkl), along with Intel’s “icpc“ C++ compiler (this can be downloaded as part of Intel Parallel Studio XE). No other external library/tool is necessary (the BLAS and LAPACK libraries are also used by TeraPCA and an implementation of these can be found in MKL).
-
-Finally, one simply needs to edit the variable “MKL_ROOT“ in the Makefile equal to current MKL  installation directory. After this modification, move to the installation directory of TeraPCA and compile the package by doing: ```make```.
-
-If MKL is preinstalled in your system check the path such as ```/opt/intel/oneapi``` and find the shell script called ```setvars.sh```. You need to set the environment variables with ```source setvars.sh``` and then make and install TeraPCA.
-
-Once compiled run the program as following: ```./TeraPCA.exe -bfile Binary-PED-file ```
-TeraPCA can be run with the following parameters.
-
-**Mandatory**
-
-*bfile*: Input Binary PED file whose principal components will be extracted. 
-
-**Optional**  
+> **Enhanced Fork** - Multithreaded Principal Component Analysis for Genomic Data
 
 
-*nsv*: Number of Principal Components to extract. Default is 10.
 
-*nrhs*: Number of RHS in the sketching matrix. Default is 2*nsv.
+## ✨ What's New in This Fork
 
-*memory*: How much memory to be used by TeraPCA(in GB). Default is 2GB.
+This is an **enhanced fork** of the original TeraPCA project with improved cross-platform support:
 
-  OR
-  
-*rfetched*: Specify exactly the number of rows you want to extract.   
+- 🔄 **Universal Architecture Support**: Makefile now supports both **x86** and **ARM Silicon** processors
+- 🚀 **Simplified Installation**: Streamlined setup process for modern systems
+- 🛠️ **Enhanced Compatibility**: Better compiler support and error handling
 
-*power*: For faster computations and avoid fetching the matrix from memory repeatedly. Default is 1.  
+## 🔬 About TeraPCA
 
-*filewrite*: Boolean flag, when set to 1 will write two files with the singular values and the singular vectors, respectively. Default is 0.
+TeraPCA is a high-performance C++ software suite for Principal Component Analysis of large-scale genomic datasets. Built on Intel's MKL library, it combines the robustness of subspace iteration with the power of randomization for efficient computation.
 
-*print*: If print is set to 2, print details about convergence and matrix computations. Default is 1.  
+### Key Features
+- 🧵 **Multithreaded Processing**: Leverages Intel MKL for optimal performance
+- 📊 **Memory Efficient**: Handles large datasets with configurable memory usage
+- 🎯 **Randomized Algorithms**: Fast convergence with sketching techniques
+- 📁 **Binary PED Support**: Direct processing of genomic file formats
 
-*prefix*: Output filename prefix, default is the Binary Ped File name.  
+## 🛠️ Installation
 
-*toll*: Tolerance criteria for   
+### Intel x86 Systems
 
-*blockPower_maxiter*: Maximum iterations to run if convergence criterion is taking longer to achieve. 
+1. **Install Intel oneAPI Toolkits**
+```bash
+# Add Intel repository
+wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor | sudo tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null
+echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
 
-*blockPower_conv_crit*: Change the convergence criterion to be used. 
-
-*trueSVD*: Compute true SVD using LAPACK of the matrix A(applies only when the dataset is fully loaded in RAM). 
-
-Note: By default, TeraPCA links to the threaded layer of MKL. To use more than one threads in the MKL-related portions of TeraPCA simply set the environment variable ‘OMP_NUM_THREADS’ equal to the number of threads, i.e., type ‘export OMP_NUM_THREADS=x’ before execution, where ‘x’ denotes the number of threads used.
-
-**Usage**
+# Install toolkits
+sudo apt update
+sudo apt install intel-basekit intel-hpckit intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic
 ```
-Usage: ./TeraPCA.exe -bfile /path/to/matrix/ [char*] -nsv (default is 10) [int] -nrhs (default 2*nsv) [int] -rfetched [int] or -memory(in GB, default is 2) [int] -power [int] -print [int] -filewrite [int] -toll [double] -blockPower_maxiter [int] -blockPower_conv_crit [int] -prefix [string]
 
+2. **Setup Environment**
+```bash
+# Check installation
+ls /opt/intel/oneapi
+
+# Set environment variables
+source /opt/intel/oneapi/setvars.sh --force
 ```
-An example dataset is given in the ``` example ``` directory with 10 individuals and 50 SNPs randomly chosen from the HapMap dataset. A sample output is also provided for the user to validate results. 
 
-Contributors: Vassilis Kalantzis, Aritra Bose, Eugenia Kontopoulou
+3. **Compile TeraPCA**
+```bash
+# Navigate to TeraPCA directory
+cd /path/to/TeraPCA
 
-Any correspondence/questions about the codes are directed to: ```kalan019@umn.edu``` and/or ```a.bose@ibm.com```
+# Edit Makefile (set MKL_ROOT)
+nano Makefile
+# Set: MKL_ROOT = $(MKLROOT)
+
+# Build
+make clean
+make
+```
+
+### ARM Silicon Systems
+
+For ARM-based systems (Apple Silicon, etc.):
+
+```bash
+# Simply compile with default settings
+make clean
+make
+```
+
+## 🚀 Quick Start
+
+### Basic Usage
+```bash
+./TeraPCA.exe -bfile example_mermigkis/ToyHapmap -nsv 5 -filewrite 1
+```
+
+### Validate Installation
+```bash
+# Compare outputs with provided example
+cat example/ToyHapmap_singularValues.txt     # Reference output
+cat noprefix_singularValues.txt              # Your output
+```
+
+## ⚙️ Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `-bfile` | string | **required** | Input Binary PED file path |
+| `-nsv` | int | 10 | Number of Principal Components |
+| `-nrhs` | int | 2×nsv | RHS in sketching matrix |
+| `-memory` | int | 2 | Memory usage (GB) |
+| `-rfetched` | int | - | Exact number of rows to extract |
+| `-power` | int | 1 | Power iterations for speed |
+| `-filewrite` | bool | 0 | Write output files (1=yes) |
+| `-print` | int | 1 | Verbosity level (2=detailed) |
+| `-prefix` | string | input filename | Output filename prefix |
+
+### Threading
+```bash
+# Set number of threads before execution
+export OMP_NUM_THREADS=8
+./TeraPCA.exe -bfile your_data -nsv 10
+```
+
+## 📁 Output Files
+
+When `-filewrite 1` is set:
+- `prefix_singularValues.txt` - Eigenvalues
+- `prefix_singularVectors.txt` - Eigenvectors
+
+## 📋 Example Dataset
+
+Included in the `example` directory:
+- 10 individuals, 50 SNPs from HapMap dataset
+- Reference outputs for validation
+
+## 🤝 Contributors
+
+**Original Authors:**
+- Vassilis Kalantzis
+- Aritra Bose  
+- Eugenia Kontopoulou
+
+**Fork Extensions:**
+- Giorgos Mermigkis (`giwrgosmerm@gmail.com` | `up1084639@ac.upatras.gr`)
+
+**Contact:** `kalan019@umn.edu` | `a.bose@ibm.com`
+
+---
+
+⭐ **Star this repository if TeraPCA helped your research!**
