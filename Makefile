@@ -1,7 +1,9 @@
 # Detect architecture
 ARCH := $(shell uname -m)
 
-# Intel x86_64
+SRC_DIR := src
+
+# X86_64 architecture with Intel MKL
 ifeq ($(ARCH),x86_64)
 
 ifndef MKLROOT
@@ -12,37 +14,37 @@ MKL_ROOT = $(MKLROOT)
 MKL_LIBROOT = $(MKL_ROOT)/lib/intel64
 MKL_INCROOT = $(MKL_ROOT)/include
 
-# Instead of icpc, use g++ with MKL
+# Use g++ instead of icpc - otherwise strange NaN values
 COMP = g++ -mkl -Wall 
 CCOMP = icc
 CFLAGS = -O3 -std=c++11 -I$(MKL_INCROOT)
 CFLAGS_C = -O3 -fPIE -I$(MKL_INCROOT)
 
-# static linking approach from README
 MKL_LIB = -Wl,--start-group $(MKL_LIBROOT)/libmkl_intel_lp64.a $(MKL_LIBROOT)/libmkl_intel_thread.a $(MKL_LIBROOT)/libmkl_core.a -Wl,--end-group -liomp5 -lpthread -lm -ldl
 
-# Use utilities.c (NOT utilities.cpp)
-CPP_SOURCES = terapca.cpp methods.cpp
-C_SOURCES = gaussian.c gennorm.c io.c utilities.c
+# Use utilities.c and not utilities.cpp
+CPP_SOURCES = $(SRC_DIR)/terapca.cpp $(SRC_DIR)/methods.cpp
+C_SOURCES = $(SRC_DIR)/gaussian.c $(SRC_DIR)/gennorm.c $(SRC_DIR)/io.c $(SRC_DIR)/utilities.c
 EXE = TeraPCA.exe
 
-CPP_OBJECTS = $(CPP_SOURCES:.cpp=.o)
-C_OBJECTS = $(C_SOURCES:.c=.o)
+CPP_OBJECTS = $(CPP_SOURCES:$(SRC_DIR)/%.cpp=%.o)
+C_OBJECTS = $(C_SOURCES:$(SRC_DIR)/%.c=%.o)
 OBJECTS = $(CPP_OBJECTS) $(C_OBJECTS)
 
 $(EXE): $(OBJECTS)
 	$(COMP) $(OBJECTS) -o $@ $(MKL_LIB)
 
-%.o: %.cpp
+%.o: $(SRC_DIR)/%.cpp
 	$(COMP) $(CFLAGS) -c $< -o $@
 
-%.o: %.c
+%.o: $(SRC_DIR)/%.c
 	$(CCOMP) $(CFLAGS_C) -c $< -o $@
 
 clean:
 	rm -f *.exe *.o *~
 
-# Apple Silicon (ARM64, e.g. MacBook)
+
+# ARM64 architecture with OpenBLAS and OpenMP
 else ifeq ($(ARCH),arm64)
 
 OPENBLAS_ROOT = /opt/homebrew/opt/openblas
@@ -59,21 +61,21 @@ CFLAGS = -Wall -O3 -std=c++11 -I$(OPENBLAS_INC) -I$(OPENMP_INC) -Xpreprocessor -
 CFLAGS_C = -Wall -O3 -I$(OPENBLAS_INC) -I$(OPENMP_INC) -Xpreprocessor -fopenmp
 LDFLAGS = -L$(OPENBLAS_LIB) -lopenblas -L$(OPENMP_LIB) -lomp -lpthread -lm
 
-CPP_SOURCES = terapca.cpp utilities.cpp methods.cpp
-C_SOURCES = gaussian.c gennorm.c io.c
+CPP_SOURCES = $(SRC_DIR)/terapca.cpp $(SRC_DIR)/utilities.cpp $(SRC_DIR)/methods.cpp
+C_SOURCES = $(SRC_DIR)/gaussian.c $(SRC_DIR)/gennorm.c $(SRC_DIR)/io.c
 EXE = TeraPCA.exe
 
-CPP_OBJECTS = $(CPP_SOURCES:.cpp=.o)
-C_OBJECTS = $(C_SOURCES:.c=.o)
+CPP_OBJECTS = $(CPP_SOURCES:$(SRC_DIR)/%.cpp=%.o)
+C_OBJECTS = $(C_SOURCES:$(SRC_DIR)/%.c=%.o)
 OBJECTS = $(CPP_OBJECTS) $(C_OBJECTS)
 
 $(EXE): $(OBJECTS)
 	$(COMP) $(OBJECTS) -o $@ $(LDFLAGS)
 
-%.o: %.cpp
+%.o: $(SRC_DIR)/%.cpp
 	$(COMP) $(CFLAGS) -c $< -o $@
 
-%.o: %.c
+%.o: $(SRC_DIR)/%.c
 	$(CCOMP) $(CFLAGS_C) -c $< -o $@
 
 clean:
