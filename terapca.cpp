@@ -31,11 +31,22 @@ Authors:   Vassilis Kalantzis, kalan019@umn.edu
 #include "utilities.h"
 #include "methods.h"
 #include "gaussian.h"
-#include "mkl.h"
 #include "omp.h"
-#include "mkl_lapacke.h"
 #include "gennorm.h"
 #include "io.h"
+
+//mermigkis
+// Detect architecture and include appropriate BLAS/LAPACK headers
+#if defined(__x86_64__) || defined(_M_X64)
+    #include "mkl.h"
+    #include "mkl_lapacke.h"
+#elif defined(__aarch64__) || defined(__arm__) || defined(__ARM_ARCH) || defined(arm64)
+    #include <cblas.h>
+    #include <lapacke.h>
+#else
+    #error "Unsupported architecture: please define BLAS/LAPACK backend for this platform."
+#endif
+
 //==============================================================
 
 //==============================================================
@@ -191,9 +202,11 @@ int main(int argc, char **argv){
        line_num++;
      }
    }
+   cout <<  endl << timestamp(&logg) << "Read " << line_num << " lines from .bim file." << endl;
    GetBimInfo(bimlines, &logg);
    logg.N = line_num;
    bimin.close();
+   cout <<  endl << timestamp(&logg) << "Number of markers: " << logg.N << endl;
    //===========================================================
 
    //===========================================================
@@ -201,7 +214,9 @@ int main(int argc, char **argv){
    //===========================================================
    int     ram_KB;
    double  ram_GB;
+   cout <<  endl << timestamp(&logg) << "Determining size of RAM..." << endl;
    ram_KB = GetRamInKB();
+   cout <<  endl << timestamp(&logg) << "Size of RAM (in KB): " << ram_KB << endl;
    std::cout << "Size of RAM (in KB): " << ram_KB << std::endl;
    ram_GB = (double) ram_KB;
    ram_GB = ram_GB / 1000000;
@@ -384,7 +399,16 @@ int main(int argc, char **argv){
      //===========================================================
      double fone = 1.0;
      sing_vals_relerror = new double[logg.NSV];
-     mkl_dimatcopy('R', 'T', logg.N, logg.M, fone, MAT, logg.M, logg.N);
+     
+     //mermigkis
+     //check the architecture, because the routines are different
+     #if defined(__x86_64__) || defined(_M_X64)
+        mkl_dimatcopy('R', 'T', logg.N, logg.M, fone, MAT, logg.M, logg.N);
+      #elif defined(__aarch64__) || defined(__arm__) || defined(__ARM_ARCH) || defined(arm64)
+        cblas_dimatcopy(CblasRowMajor, CblasTrans, logg.N, logg.M, fone, MAT, logg.M, logg.N);
+      #else
+        #error "Unsupported architecture: please define BLAS/LAPACK backend for this platform."
+      #endif
      TRUE_SING_VALUES = (double*) malloc(min_dim*sizeof(double));
      TRUE_LEFT_SING_VECS = (double*) malloc(logg.M*min_dim*sizeof(double));
      TRUE_RIGHT_SING_VECS = (double*) malloc(logg.N*min_dim*sizeof(double));

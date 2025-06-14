@@ -2,13 +2,30 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-#include "mkl.h"
 #include "omp.h"
 #include "structures.h"
-#include "mkl_lapacke.h"
 #include <string>
 #include <sstream>
 
+
+//mermigkis
+// Detect architecture and include appropriate BLAS/LAPACK headers
+#if defined(__x86_64__) || defined(_M_X64)
+    #include "mkl.h"
+    #include "mkl_lapacke.h"
+#elif defined(__aarch64__) || defined(__arm__) || defined(__ARM_ARCH) || defined(arm64)
+    #include <cblas.h>
+    #include <lapacke.h>
+#else
+    #error "Unsupported architecture: please define BLAS/LAPACK backend for this platform."
+#endif
+
+// mermigkis
+// Determine ths OS, needed for memory size retrieval
+#if defined(__APPLE__) || defined(__MACH__)
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#endif
 
 using namespace std;
 
@@ -32,21 +49,50 @@ void decode_plink_precomp(unsigned char * __restrict__ out,
 string timestamp(struct logistics *logg);
 // The following routine was copied by the following link:
 // http://stackoverflow.com/questions/349889/how-do-you-determine-the-amount-of-linux-system-ram-in-c
+// mermigkis
+// The following routine gets system RAM size across different platforms
 int GetRamInKB(void)
 {
-  FILE *meminfo = fopen("/proc/meminfo", "r");
-
-  char line[256];
-  while(fgets(line, sizeof(line), meminfo)) {
-    int ram;
-    if(sscanf(line, "MemTotal: %d kB", &ram) == 1) {
-      fclose(meminfo);
-      return ram;
+    cout << "Getting RAM size..." << endl;
+    
+#if defined(__linux__)
+    // Linux version - uses /proc/meminfo
+    FILE *meminfo = fopen("/proc/meminfo", "r");
+    if (!meminfo) {
+        cout << "Error: Cannot open /proc/meminfo" << endl;
+        return -1;
     }
-  }
-
-  fclose(meminfo);
-  return -1;
+    
+    char line[256];
+    while(fgets(line, sizeof(line), meminfo)) {
+        int ram;
+        if(sscanf(line, "MemTotal: %d kB", &ram) == 1) {
+            fclose(meminfo);
+            return ram;
+        }
+    }
+    fclose(meminfo);
+    return -1;
+    
+#elif defined(__APPLE__) || defined(__MACH__)
+    // macOS version - uses sysctl
+    #include <sys/types.h>
+    #include <sys/sysctl.h>
+    
+    int64_t ram_bytes;
+    size_t size = sizeof(ram_bytes);
+    
+    if (sysctlbyname("hw.memsize", &ram_bytes, &size, NULL, 0) == 0) {
+        // Convert bytes to KB
+        return (int)(ram_bytes / 1024);
+    } else {
+        cout << "Error: Cannot get memory size via sysctl" << endl;
+        return -1;
+    }
+    
+#else
+    #error "Unsupported platform for memory detection. Please implement GetRamInKB() for this OS."
+#endif
 }
 
 

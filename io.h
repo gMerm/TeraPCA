@@ -11,6 +11,18 @@ typedef enum {
 
 #endif
 
+//mermigkis
+//cpp is confused with c
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int findarg(const char *argname, ARG_TYPE type, void *val, int argc, char **argv);
 
 // This part is copied from http://www-users.cs.umn.edu/~saad/software/EVSL/
+
+//mermigkis
+//cpp is confused with c
+#ifdef __cplusplus
+}
+#endif
